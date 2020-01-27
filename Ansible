@@ -1,1 +1,267 @@
+Ansible:-
+Automatic day to day tasks and complex tasks using ansible. 
+Ansible components
+Ansible ad-hoc commands
+Writing ansible playbooks
+Most commonly used modules
+Converting Shell commands into a playbook
+Ansible variables
+Ansible vault
+Ansible roles
+How to convert a playbook into a role
+
+Configuration Management → I have to provision a new VM. After the provision of a new VM, I have to do some prerequisites before handing over to the application team or database team. In those cases, I have to create some of the users, some of the packages I have to install, Updating the sys and enable in the monitoring and enabling the backup. 
+Provisioning → Creating New VM, Creating Cloud instances. Creating Docker containers or Kubernetes pods. 
+Application Deployment → Jar or war 
+Orchestration → Exuteing tasks in the sequence order. Eg- I need to enable Monitoring to my sys. 1st I need to update my sys and install required packages. 
+
+Simple ---> Human readable, No special code skills, Tasks executed in order (YAML formate, just spaces, and colon )
+Powerful ---> Configuration, App Deployment, Provisioning, and Orchestration
+Agentless ---> Use OpenSSH and Secure.  (no need an additional agent and there is no additional thing to do like restart the Agent when I update some configuration and using open ssh )
+Efficient ---> it is going to use the default agent which comes with UNIX flatform i.e ssh and it is a pushed based mechanism i.e your client site ideal and the ansible server pushes the all the changes to the target sys. And consume fewer resources in the sys.  I.e I can run some application in the ansible sys as well
+Since it, an Open Source no needs to buy any licenses until we need previzied services.  
+
+Flexible ---> No need to maintain different tools for different purposes like application deployment one tool and configuration management one tool and provisioning one tool and Orchestration.
+
+
+How Ansible works
+Control nodes and Managed nodes
+Control nodes  Manage these nodes via ssh. Control nodes should have access to Client nodes/Managed nodes i.e possible using passwordless authentication. 
+
+Components in Ansible
+Inventory →  List of server information or Managed nodes information
+Playbooks → are the actual tasks that I need to execute on the target sys.  ( i have to create a user on all client sys, which user I need to create that information updated in the playbook on which server I need to update that information is available in Inventory  )
+Modules → use welly used by tasks, tasks are ntg but activity that we want to do. These modules are shipped with ansible while I am installing.  Most of the useful come with while I am installing ansible. 
+These modules are used by ansible playbooks. 
+
+Ansible Terminology
+Control node ---> Any Machine with Ansible installed.
+Managed nodes ---> The network devices (servers) you manage with Ansible
+Inventory ---> A list of managed nodes. An inventory file is also sometimes called a “hostfile”. 
+Modules ---> The units of code Ansible executes. Each module has a particular functionality.  
+     Predefined modules and custom modules. 
+Tasks ---> The units of action in Ansible. Tasks use modules.
+Playbooks ---> Ordered lists of tasks. 
+
+
+Ansible lab setup
+Control node (Amazon Linux)  ---> RHEL managed node, Amazon Linux Managed node and Ubuntu Managed node. 
+1st Amazon Linux as a control node and 2nd RHEL Managed node. Then passwordless authentication b/w these two add RHEL server in the host inventory of the Ansible server so that it can able to manage. 
+
+Setup Ansible Control node
+Setup EC2 instance
+Setup hostname
+Create ansadmin user
+Add user to sudoers file
+Generate ssh keys
+Enable password-based login
+Install ansible. 
+
+Sudo su -
+hostname ansible-control-node
+Vi /etc/hostname
+Useradd ansadmin
+Passwd ansadmin
+Visudo
+shift+G
+Ansadmin → add under --->  allow root to run any commands anywhere
+Check under ---> Same thing without a password. ---> ALL=(ALL)
+ NOPASSWD: ALL
+
+Sudo su - ansadmin
+Ssh -keygen
+ Keys are stored under .ssh under home directory 
+Ls → there will be one public ley anthore private key → public key on the target system . private is used to connect with the public key.      
+Exit → because it requires root privilazes 
+Vi /etc/ssh/sshd_config
+PasswordAuthentication yes=> you need to uncomment
+PasswordAuthentication no=> you need to comment
+service sshd restart
+
+
+yum install python
+yum install python-pip
+pip install ansible
+ansible --version
+When we install ansible using pip => config file = None
+We cant get the config file but still, we can download it. 
+Config location is /etc/ansible
+Mkdir /etc/ansible
+Cd /etc/ansible
+Search ansible config file in google.
+Copy the file from github and past in the => vi ansible.cfg
+We need host file -> we can create by touch
+Touch hosts => it is inventory → all managed sys information should update here.
+
+Ansible managed node
+Setup control nodes
+Setup EC2 instance
+Setup hostname
+Create ansadmin user
+Add user to sudoers file
+Enable password-based login
+….
+Sudo su -
+Vi /etc/hostname
+Hostname rhel-managed-node
+Sudo su -
+Useradd ansadmin
+Passwd ansadmin
+Vi /etc/ssh/sshd_config
+Visudo
+Ansadmin All=(ALL)  NOPASSWD: ALL
+We need to update the server IP address on the ansible.
+service sshd restart
+
+Setting up ansible environment
+Type in managed node => ip addr => use private ip address
+Type in control node => vi hosts => update the ip address of the managed node
+Control node => cat hosts
+Control node => sudo su - ansadmin
+Contro node => ssh-copy-id “ip adress”
+Ssh “managed node ips address”
+
+
+Ansible modules
+Ping
+Command
+Stat
+Yum
+User
+Setup
+
+
+Control node=> Ansible all -m ping
+Control node=> Ansible all -m command -a “uptime”  => “date”, “who”
+Control node=> ansible all -m stat -a “path=/etc/hosts”
+Control node=> ansible all -m yum -a “name=git” => it wil ask for root
+Control node=> ansible all -m yum -a “name=git” -b => it will become as root excute it.
+Control node=> ansible all -m user -a “name=john” -b => m=module, a= attribute
+Managed node=> cat /etc/passwd
+Control node=> ansible all -m setup => setup is a module it doesnt requrie any attribute. It gives entire sys information of the managed nodes.
+
+
+
+What is the inventory?
+Ansible works against multiple managed nodes or “hosts” in your infrastructure at the same time, using a list or group of lists known as Inventory.
+The inventory file is a collection of hosts(nodes) which are managed by ansible control node.
+Two types of inventory files→ host inventory file/default inventory file (exist under /etc/ansible) or custom inventory file. 
+…
+Hosts information can be defined in the following ways.
+Default location: /etc/ansible/hosts
+Use -i option: ansible -i my_hosts
+Defined in ansible.cfg file
+
+
+
+Vi hosts  => enter host ip address
+Cat hosts
+Ansible all -m ping -i hosts => it will ping custom hosts in that, it will not go default hosts.
+More /etc/ansible/ansible.cfg
+We have 5 members in our team - each member executing different playbooks on different servers.
+We can create group’s in the inventory 
+Sudo vi /etc/ansible/hosts
+[rehl]
+[dummy]
+Ansible all -m ping -i /etc/ansible/hosts
+Ansible rhel -m ping -i /etc/ansible/hosts
+
+
+Ansible configuration file
+Ls -l /etc/ansible/ansible.cfg
+
+
+Ansible modules
+A module is a reusable, standalone script that ansible runs on your behalf, either locally or remotely.
+Modules interact with your local machine , an API or a remote system to perform specific tasks like
+          Creating users
+          Installing packages
+          Updating configurations
+          Spinning up instances       etc…
+Modules are the programs that perform the actual work of the tasks of a play
+Ansible-doc -l | wc
+
+
+
+Ansible Playbook
+A playbook is a test file is written in YAML (YAML Ain’t Markup Language) format and is normally saved as .yml.
+The playbook begins with a line consisting of three dashes (---)
+As a start of the document marker.
+An item in a YAML list starts with a single dash followed by a space.
+Hosts and tasks are mandatory items in a playbook
+The playbook primarily uses indentation with space characters to indicate the structure of its data
+Modules are used to perform tasks
+Commant start with #
+,,,
+Ansible all -m user -a “name=john” -b   => all-> means host inventory, if we don’t specify it will take the default one. m-> module 
+Create_user.yml
+---
+- hosts: all
+  Become: ture
+  Tasks:
+  - user: name=john
+,,,,,
+Sudo mkdir ansible
+Ls -l
+Sudo chown ansadmin:ansadmin ansible
+Vi create_user.yml
+---
+- hosts: all
+  Become: true
+  Tasks:
+  - user: name=john
+,,,,
+Managed node=> cat /etc/passwd
+Ansible-playbook create_user.yml
+
+Vi /etc/hostname
+amazon-managed-node
+Basically it is like a web server or app server or DB server
+,,,,
+- name: this playbook is to create user
+  Hosts: all
+  Become: true
+  Tasks:
+   - name: creating user john
+      User: name=john
+Or
+- name: this playbook is to create user
+  Hosts: all
+  Become: true
+  Tasks:
+   - name: creating user john
+      User: 
+          Name: john
+
+
+
+
+Vi install_package.yml
+---
+- name: this playbook install packages
+   Hosts: webservers
+   Become: true => ansible will not execute the installation. 
+   Tasks:
+    - name: install packages
+      Yum:
+          Name: git
+          State: installed
+,,,,
+Ansible-playbook -i hosts install_packages.yml
+,,,,,
+- name: this playbook install packages
+   Hosts: webservers
+   # Become: true => ansible will not execute the installation. 
+   Tasks:
+    - name: install packages
+      Yum:
+          Name: tree
+          State: installed
+,,,,
+ We will get an error this has to run as a root user. Instead of enabling we can use as below
+Ansible-playbook -i hosts install_packages.yml -b
+
+
+How to create a directory or file on target system. 
+
 
